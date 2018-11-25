@@ -25,8 +25,7 @@ SECRET_KEY = '&h*zeb443n0ujbb2u2sym=qpxnhr!i52h)%&&9hwx52u39x(#9'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "argri-water.herokuapp.com"]
 
 # Application definition
 
@@ -154,8 +153,9 @@ GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
 # heroku git:remote -a argri-water
 # heroku config:set POSTGRESQL_PASSWORD=?? POSTGRESQL_HOST=??
 # heroku config:set BUILD_WITH_GEO_LIBRARIES=1
-# heroku buildpacks:set heroku/python
 
+# make sure to have requirements.txt >> or will not detect language
+# make sure to have static dir in the git root.
 
 # PROJ4_LIBRARY_PATH = os.environ.get('PROJ4_LIBRARY_PATH')
 # heroku buildpacks:remove heroku-community/apt
