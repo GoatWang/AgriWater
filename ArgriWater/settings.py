@@ -156,6 +156,8 @@ GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
 
 # make sure to have requirements.txt >> or will not detect language
 # make sure to have static dir in the git root.
+# make sure to install gunicorn: pip install gunicorn
+
 
 # PROJ4_LIBRARY_PATH = os.environ.get('PROJ4_LIBRARY_PATH')
 # heroku buildpacks:remove heroku-community/apt
