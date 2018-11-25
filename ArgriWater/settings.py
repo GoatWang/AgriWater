@@ -154,6 +154,7 @@ GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
 # heroku git:remote -a argri-water
 # heroku config:set POSTGRESQL_PASSWORD=?? POSTGRESQL_HOST=??
 # heroku config:set BUILD_WITH_GEO_LIBRARIES=1
+# heroku buildpacks:set heroku/python
 
 
 # PROJ4_LIBRARY_PATH = os.environ.get('PROJ4_LIBRARY_PATH')
