@@ -116,7 +116,7 @@
             var agreement_chart = null
             var effective_tickets_chart = null
             function draw_polygon(caseid){
-                console.log("start ajax")
+                $("body").css("cursor", "wait")
                 $.ajax({
                     url: "/mainapp/election_visualize/" + caseid.toString(),
                     type: "GET",
@@ -124,7 +124,7 @@
                     processData: false,
                     contentType: false,
                     success: function(data) {
-                        console.log("start success")
+                        $("body").css("cursor", "default")
 
                         // other info
                         $('#id_num_qualified_citizens_input').val(data['num_qualified_citizens'] + "人")
