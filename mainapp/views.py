@@ -1,6 +1,10 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 
+
+from ArgriWater import settings
+import os
+import pandas as pd
 # Create your views here.
 # line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
 # parser = WebhookParser(settings.LINE_CHANNEL_SECRET)
@@ -39,3 +43,17 @@ from django.http import HttpResponse, JsonResponse
 
 def index(request):
     return HttpResponse("Hello, world. You're at the index.")
+
+def election_index(request):
+    files = os.listdir(os.path.join(settings.MEDIA_ROOT, "results"))
+    file_paths = [os.path.join(settings.MEDIA_ROOT, "results", f) for f in files] 
+    df = pd.read_csv(file_paths[0])
+    context = {"html_table":df.to_html()}
+    return render(request, 'mainapp/election_index.html', context)
+
+# def election_visualize(request):
+#     files = os.listdir(os.path.join(settings.MEDIA_ROOT, "results"))
+#     file_paths = [os.path.join(settings.MEDIA_ROOT, "results", f) for f in files] 
+#     df = pd.read_csv(file_paths[0])
+#     return JsonResponse({"html_table":df.to_html()})
+
