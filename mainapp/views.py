@@ -100,7 +100,7 @@ def election_visualize(request, caseid=7):
     df_num_tickets_proportion = df_result.groupby('縣市')['投票率(%)'].mean().reset_index().sort_values('投票率(%)', ascending=False)
 
     context = {
-        "table":df_result.to_dict(orient='records'),
+        "table":df_result[['縣市', '地區', '有效票數', '有效同意票數對投票權人數百分比(%)', 'coordinates']].to_dict(orient='records'),
         "num_qualified_citizens":str(df_result['投票權人數'].sum()),
         "num_tickets":str(df_result['投票數'].sum()),
         "num_effictive_tickets":str(df_result['有效票數'].sum()),

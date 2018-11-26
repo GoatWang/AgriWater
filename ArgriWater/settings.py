@@ -25,7 +25,7 @@ SECRET_KEY = '&h*zeb443n0ujbb2u2sym=qpxnhr!i52h)%&&9hwx52u39x(#9'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "argri-water.herokuapp.com"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "192.168.0.181", "argri-water.herokuapp.com"]
 
 # Application definition
 
