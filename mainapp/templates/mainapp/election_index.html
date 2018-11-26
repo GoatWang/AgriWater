@@ -1,6 +1,249 @@
 <html>
-    <head></head>
+    <head>
+
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
+        integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+        crossorigin=""/>
+        <style>
+            #mapid { height: 700px; }
+            .container{
+                margin-top: 20px;   
+            }
+            .center {
+                display: table-cell;
+                vertical-align: middle;
+            }
+        </style>
+        
+    </head>
     <body>
-        {{ html_table | safe }}
+        <div class="container">
+            <div class="row form-group">
+                <label for="id_caseid_select">公投案號</label>
+                <select class="form-control" id="id_caseid_select">
+                    {% for idx, choice in case_choices %}
+                        <option value="{{idx}}">{{choice}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="row">
+                <div id="mapid" class="col-sm-4"></div>
+                <div class="col-sm-8">
+                    <form>
+                        <div class="form-group row">
+                            <label for="id_num_qualified_citizens_input" class="col-sm-6 col-form-label">投票權人數</label>
+                            <div class="col-sm-6">
+                            <input type="text" readonly class="form-control-plaintext" id="id_num_qualified_citizens_input" >
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_num_tickets_input" class="col-sm-6 col-form-label">投票數</label>
+                            <div class="col-sm-6">
+                            <input type="text" readonly class="form-control-plaintext" id="id_num_tickets_input" >
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_num_effictive_tickets_input" class="col-sm-6 col-form-label">有效票數</label>
+                            <div class="col-sm-6">
+                            <input type="text" readonly class="form-control-plaintext" id="id_num_effictive_tickets_input" >
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="id_agreement_proportion_input" class="col-sm-6 col-form-label">有效同意票數對投票權人數百分比(%)</label>
+                            <div class="col-sm-6">
+                            <input type="text" readonly class="form-control-plaintext" id="id_agreement_proportion_input" >
+                            </div>
+                        </div>
+                    </form>
+                    <canvas id="bar-chart" width="100%" height="65">
+
+                    </canvas>
+                </div>
+            </div>
+            <div class="row">
+                <canvas id="bar-chart-num-tickets" width="100%" height="30">
+
+                </canvas>
+            </div>
+
+            <div class="row">
+                <h4>資料來源:</h4>
+            </div>
+            <div class="row">
+                <ul>
+                    <li><a href="https://github.com/g0v/referendum_report/tree/master/results?fbclid=IwAR2LqjVPnDHepI97qbFrc6cpmMKRGB1ol_8e3_AoHAFQeBD0obUqOts9gIo">g0v</a></li>
+                </ul>
+            </div>
+
+            <div class="row">
+                <h4>聯絡資訊:</h4>
+            </div>
+            <div id="footer_div">
+                <footer class="center">
+                    <p><a href="https://www.thinktronltd.com/">興創知能股份有限公司</a></p>
+                    <p>Made by: JeremyWang (<a href="https://github.com/GoatWang">Github</a>, 
+                        <a href="mailto:jeremywang@thinktronltd.com">Mail</a>)
+                    </p>
+                </footer>
+            </div>
+        </div>
+
+
+        <script
+        src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+        <script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"
+        integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA=="
+        crossorigin=""></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+
+        <script>
+            var mymap = L.map('mapid').setView([23.6055, 120.9911], 8);
+            L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                maxZoom: 18,
+                id: 'mapbox.streets',
+                accessToken: 'pk.eyJ1IjoiamVyZW15NDU1NSIsImEiOiJjamt6MjRvdWwwcG93M3ZtdGRkMXJlYjRyIn0.6SQzceRZS8aF6JHXBqFUyA'
+            }).addTo(mymap);
+
+            var agreement_chart = null
+            var effective_tickets_chart = null
+            function draw_polygon(caseid){
+                console.log("start ajax")
+                $.ajax({
+                    url: "/mainapp/election_visualize/" + caseid.toString(),
+                    type: "GET",
+                    cache: false,
+                    processData: false,
+                    contentType: false,
+                    success: function(data) {
+                        console.log("start success")
+
+                        // other info
+                        $('#id_num_qualified_citizens_input').val(data['num_qualified_citizens'] + "人")
+                        $('#id_num_tickets_input').val(data['num_tickets'] + "人")
+                        $('#id_num_effictive_tickets_input').val(data['num_effictive_tickets'] + "人")
+                        $('#id_agreement_proportion_input').val(data['agreement_proportion'])
+                        
+                        // chart
+                        if (agreement_chart){agreement_chart.destroy()}
+                        agreement_chart = new Chart($("#bar-chart").get(0).getContext("2d"), {
+                            type: 'bar',
+                            data: {
+                            labels: data['counties'],
+                            datasets: [
+                                {
+                                label: "有效同意票數對投票權人數百分比(%)",
+                                backgroundColor: "#6b9eef",
+                                data: data['counties_proportion']
+                                }
+                            ]
+                            },
+                            options: {
+                            legend: { display: false },
+                            title: {
+                                display: true,
+                                text: '有效同意票數對投票權人數百分比(%)'
+                            }
+                            }
+                        });
+                        
+                        // effective tickets chart
+                        if (effective_tickets_chart){effective_tickets_chart.destroy()}
+                        effective_tickets_chart = new Chart($("#bar-chart-num-tickets").get(0).getContext("2d"), {
+                            type: 'bar',
+                            data: {
+                            labels: data['et_counties'],
+                            datasets: [
+                                {
+                                label: "投票率(%)",
+                                backgroundColor: "#ff7c7c",
+                                data: data['et_counties_effective_tickets']
+                                }
+                            ]
+                            },
+                            options: {
+                            legend: { display: false },
+                            title: {
+                                display: true,
+                                text: '投票率(%)'
+                            }
+                            }
+                        });
+                        
+                        // polygons
+                        col = "有效同意票數對投票權人數百分比(%)"
+                        percentages = []
+                        data['table'].map((row)=> {
+                            row[col] = row[col] / 100;
+                            percentages.push(row[col])
+                            return row;
+                        });
+                        console.log(data['table'][0][col])
+                        max = Math.max(...percentages)
+                        min = Math.min(...percentages)
+                        $(data['table']).each(function(i, row){
+                            color_deepness = (row[col] - min) / (max - min)
+                            var latlngs = row['coordinates'];
+                            var color;
+                            var r = Math.floor(255 - (color_deepness * 200));
+                            var g = Math.floor(0);
+                            var b = Math.floor(50);
+                            color= "rgb("+r+" ,"+g+","+ b+")"; 
+                            options = {
+                                color: color, 
+                                fillColor:color, 
+                                fillOpacity:0.8, 
+                                weight: 0
+                            }
+                            var polygon = L.polygon(latlngs, options)
+                            var list = "<dl><dt>位置</dt>"
+                                        + "<dd>" + row['縣市'] + row['地區'] + "</dd>"
+                                        + "<dt>同意比率</dt>"
+                                        + "<dd>" + (row[col] * 100).toFixed(2) + "%" + "</dd>"
+                                        + "<dt>有效票數</dt>"
+                                        + "<dd>" + row['有效票數'] + "</dd>"
+                                        + "</dl>"
+                            polygon.bindPopup(list)
+                            // polygon.bindPopup(row['縣市'] + row['地區'] + ": " + (row[col] * 100).toFixed(2) + "%")
+                            polygon.on('mouseover', function (e) {
+                                this.openPopup();
+                            });
+                            polygon.on('mouseout', function (e) {
+                                this.closePopup();
+                            });
+                            polygon.addTo(mymap);
+                        })
+
+                    }
+                })
+
+            }
+            draw_polygon(7)
+
+            function clean_map(){
+                for (i in mymap._layers) {
+                    if (mymap._layers[i].options['fillOpacity'] == 0.8) {
+                        try {
+                            mymap.removeLayer(mymap._layers[i]);
+                        } catch (e) {
+                            console.log("problem with " + e + mymap._layers[i]);
+                        }
+                    }
+                }
+            }
+            $("#id_caseid_select").change(function(){
+                clean_map()
+                caseid = $("#id_caseid_select").val()
+                draw_polygon(caseid)
+            })
+
+            
+
+        </script>
     </body>
 </html>

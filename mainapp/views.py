@@ -5,6 +5,7 @@ from django.http import HttpResponse, JsonResponse
 from ArgriWater import settings
 import os
 import pandas as pd
+import re
 # Create your views here.
 # line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
 # parser = WebhookParser(settings.LINE_CHANNEL_SECRET)
@@ -44,16 +45,70 @@ import pandas as pd
 def index(request):
     return HttpResponse("Hello, world. You're at the index.")
 
+
+df_result = pd.read_pickle(os.path.join(settings.MEDIA_ROOT,"df_result.pkl"))
+
+def get_df_result(caseid=7):
+    # files = os.listdir(os.path.join(settings.MEDIA_ROOT, "results"))
+    # file_paths = [os.path.join(settings.MEDIA_ROOT, "results", f) for f in files] 
+
+    # results = []
+    # for idx, fp in enumerate(file_paths):
+    #     df_result = pd.read_csv(fp)
+    #     df_result['案件全稱'] = files[idx].replace('.csv', '')
+    #     df_result['案件'] = int(re.findall("第\d+案", files[idx])[0].replace("第", "").replace("案", ""))
+    #     df_result['投票權人數'] = df_result['投票權人數'].apply(lambda x:x.replace(',', '')).astype(int)
+    #     df_result['投票數'] = df_result['投票數'].apply(lambda x:x.replace(',', '')).astype(int)
+    #     df_result['有效票數'] = df_result['有效票數'].apply(lambda x:x.replace(',', '')).astype(int)
+    #     df_result['有效同意票數對投票權人數百分比(%)'] = df_result['有效同意票數對投票權人數百分比(%)'].apply(lambda x:x.replace('%', '')).astype(float)
+    #     df_result['投票率(%)'] = df_result['投票率(%)'].apply(lambda x:x.replace('%', '')).astype(float)
+    #     results.append(df_result)
+    # df_result = pd.concat(results).sort_values('案件')
+
+    # df_result_town = df_result[pd.notnull(df_result['地區'])].copy()
+    # df_result_town['locate_idx'] = df_result_town[['縣市', '地區']].apply(tuple, axis=1)
+    # df_town_polygon = pd.read_pickle(os.path.join(settings.MEDIA_ROOT,"df_town.pkl")).copy()
+    # df_town_polygon['locate_idx'] = df_town_polygon[['COUNTYNAME', 'TOWNNAME']].apply(tuple, axis=1)
+
+    # df_result = pd.merge(df_result_town, df_town_polygon, on='locate_idx')
+    # df_result.to_pickle(os.path.join(settings.MEDIA_ROOT,"df_result.pkl"))
+    # df_result = pd.read_pickle(os.path.join(settings.MEDIA_ROOT,"df_result.pkl"))
+    return df_result.copy()
+
 def election_index(request):
-    files = os.listdir(os.path.join(settings.MEDIA_ROOT, "results"))
-    file_paths = [os.path.join(settings.MEDIA_ROOT, "results", f) for f in files] 
-    df = pd.read_csv(file_paths[0])
-    context = {"html_table":df.to_html()}
+    df_result = get_df_result()
+    print(df_result.columns)
+    case_choices = df_result[['案件', '案件全稱']].copy().drop_duplicates().values.tolist()
+    case_choices = sorted(case_choices, key=lambda x:x[0])
+
+# Index(['案件', '縣市', '地區', '同意票數', '不同意票數', '有效票數', '無效票數', '投票數', '投票權人數',
+#        '投票率(%)', '有效同意票數對投票權人數百分比(%)', '有效不同意票數對投票權人數百分比(%)',
+#        '有效同意與不同意票數對投票權人數百分比(%)差值', '案件全稱', 'locate_idx', 'TOWNID', 'TOWNCODE',
+#        'COUNTYNAME', 'TOWNNAME', 'TOWNENG', 'COUNTYID', 'COUNTYCODE',
+#        'coordinates'],
+
+    context = {
+        "case_choices":case_choices, 
+        }
     return render(request, 'mainapp/election_index.html', context)
 
-# def election_visualize(request):
-#     files = os.listdir(os.path.join(settings.MEDIA_ROOT, "results"))
-#     file_paths = [os.path.join(settings.MEDIA_ROOT, "results", f) for f in files] 
-#     df = pd.read_csv(file_paths[0])
-#     return JsonResponse({"html_table":df.to_html()})
+def election_visualize(request, caseid=7):
+    df_result = get_df_result()
+    df_result = df_result[df_result['案件']==caseid]
+    df_county_group = df_result.groupby('縣市')['有效同意票數對投票權人數百分比(%)'].mean().reset_index().sort_values('有效同意票數對投票權人數百分比(%)', ascending=False)
+
+    df_num_tickets_proportion = df_result.groupby('縣市')['投票率(%)'].mean().reset_index().sort_values('投票率(%)', ascending=False)
+
+    context = {
+        "table":df_result.to_dict(orient='records'),
+        "num_qualified_citizens":str(df_result['投票權人數'].sum()),
+        "num_tickets":str(df_result['投票數'].sum()),
+        "num_effictive_tickets":str(df_result['有效票數'].sum()),
+        "agreement_proportion": ("%.2f" %(df_result['有效同意票數對投票權人數百分比(%)'].mean())) + "%",
+        "counties":df_county_group['縣市'].values.tolist(),
+        "counties_proportion":df_county_group['有效同意票數對投票權人數百分比(%)'].values.tolist(),
+        "et_counties": df_num_tickets_proportion['縣市'].values.tolist(),
+        "et_counties_effective_tickets": df_num_tickets_proportion['投票率(%)'].values.tolist(),
+    }
+    return JsonResponse(context)
 
