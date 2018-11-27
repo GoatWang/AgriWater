@@ -49,18 +49,49 @@
                             <input type="text" readonly class="form-control-plaintext" id="id_num_effictive_tickets_input" >
                             </div>
                         </div>
+
+                        <div class="form-group row">
+                            <label for="id_num_agreement_tickets_input" class="col-sm-6 col-form-label">同意票數</label>
+                            <div class="col-sm-6">
+                            <input type="text" readonly class="form-control-plaintext" id="id_num_agreement_tickets_input" >
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
+                            <label for="id_num_disagreement_tickets_input" class="col-sm-6 col-form-label">不同意票數</label>
+                            <div class="col-sm-6">
+                            <input type="text" readonly class="form-control-plaintext" id="id_num_disagreement_tickets_input" >
+                            </div>
+                        </div>
+
                         <div class="form-group row">
                             <label for="id_agreement_proportion_input" class="col-sm-6 col-form-label">有效同意票數對投票權人數百分比(%)</label>
                             <div class="col-sm-6">
                             <input type="text" readonly class="form-control-plaintext" id="id_agreement_proportion_input" >
                             </div>
                         </div>
+                        <div class="form-group row">
+                            <label for="id_disagreement_proportion_input" class="col-sm-6 col-form-label">有效不同意票數對投票權人數百分比(%)</label>
+                            <div class="col-sm-6">
+                            <input type="text" readonly class="form-control-plaintext" id="id_disagreement_proportion_input" >
+                            </div>
+                        </div>
                     </form>
-                    <canvas id="bar-chart" width="100%" height="70">
-
-                    </canvas>
                 </div>
             </div>
+
+            <div class="row">
+                <canvas id="agreement_bar_chart" width="100%" height="30">
+
+                </canvas>
+            </div>
+
+            <div class="row">
+                <canvas id="disagreement_bar_chart" width="100%" height="30">
+
+                </canvas>
+            </div>
+            
             <div class="row">
                 <canvas id="bar-chart-num-tickets" width="100%" height="30">
 
@@ -114,6 +145,7 @@
             }).addTo(mymap);
 
             var agreement_chart = null
+            var disagreement_chart = null
             var effective_tickets_chart = null
             function draw_polygon(caseid){
                 $("body").css("cursor", "wait")
@@ -127,22 +159,26 @@
                         $("body").css("cursor", "default")
 
                         // other info
-                        $('#id_num_qualified_citizens_input').val(data['num_qualified_citizens'] + "人")
-                        $('#id_num_tickets_input').val(data['num_tickets'] + "人")
-                        $('#id_num_effictive_tickets_input').val(data['num_effictive_tickets'] + "人")
+                        $('#id_num_qualified_citizens_input').val(parseInt(data['num_qualified_citizens']/10000) + "萬人")
+                        $('#id_num_tickets_input').val(parseInt(data['num_tickets']/10000) + "萬人")
+                        $('#id_num_effictive_tickets_input').val(parseInt(data['num_effictive_tickets']/10000) + "萬人")
+                        $('#id_num_agreement_tickets_input').val(parseInt(data['num_agreement_tickets']/10000) + "萬人")
+                        $('#id_num_disagreement_tickets_input').val(parseInt(data['num_disagreement_tickets']/10000) + "萬人")
                         $('#id_agreement_proportion_input').val(data['agreement_proportion'])
-                        
-                        // chart
+                        $('#id_disagreement_proportion_input').val(data['disagreement_proportion'])
+
+
+                        // agreement_chart
                         if (agreement_chart){agreement_chart.destroy()}
-                        agreement_chart = new Chart($("#bar-chart").get(0).getContext("2d"), {
+                        agreement_chart = new Chart($("#agreement_bar_chart").get(0).getContext("2d"), {
                             type: 'bar',
                             data: {
-                            labels: data['counties'],
+                            labels: data['agreement_counties'],
                             datasets: [
                                 {
                                 label: "有效同意票數對投票權人數百分比(%)",
                                 backgroundColor: "#6b9eef",
-                                data: data['counties_proportion']
+                                data: data['agreement_counties_proportion']
                                 }
                             ]
                             },
@@ -155,6 +191,30 @@
                             }
                         });
                         
+
+                        // disagreement_chart
+                        if (disagreement_chart){disagreement_chart.destroy()}
+                        disagreement_chart = new Chart($("#disagreement_bar_chart").get(0).getContext("2d"), {
+                            type: 'bar',
+                            data: {
+                            labels: data['disagreement_counties'],
+                            datasets: [
+                                {
+                                label: "有效不同意票數對投票權人數百分比(%)",
+                                backgroundColor: "#ff7c7c",
+                                data: data['disagreement_counties_proportion']
+                                }
+                            ]
+                            },
+                            options: {
+                            legend: { display: false },
+                            title: {
+                                display: true,
+                                text: '有效不同意票數對投票權人數百分比(%)'
+                            }
+                            }
+                        });
+
                         // effective tickets chart
                         if (effective_tickets_chart){effective_tickets_chart.destroy()}
                         effective_tickets_chart = new Chart($("#bar-chart-num-tickets").get(0).getContext("2d"), {
@@ -164,7 +224,7 @@
                             datasets: [
                                 {
                                 label: "投票率(%)",
-                                backgroundColor: "#ff7c7c",
+                                backgroundColor: "#47cad1",
                                 data: data['et_counties_effective_tickets']
                                 }
                             ]
@@ -186,10 +246,15 @@
                             percentages.push(row[col])
                             return row;
                         });
-                        console.log(data['table'][0][col])
                         max = Math.max(...percentages)
                         min = Math.min(...percentages)
                         $(data['table']).each(function(i, row){
+                            // console.log(row['縣市'])
+                            // console.log(row['有效票數'])
+                            // console.log(row['coordinates'].length)
+                            // if (row['縣市']=="臺東縣"){
+                            //     console.log(row['coordinates'])   
+                            // }
                             color_deepness = (row[col] - min) / (max - min)
                             var latlngs = row['coordinates'];
                             var color;
@@ -203,23 +268,26 @@
                                 fillOpacity:0.8, 
                                 weight: 0
                             }
-                            var polygon = L.polygon(latlngs, options)
-                            var list = "<dl><dt>位置</dt>"
-                                        + "<dd>" + row['縣市'] + row['地區'] + "</dd>"
-                                        + "<dt>同意比率</dt>"
-                                        + "<dd>" + (row[col] * 100).toFixed(2) + "%" + "</dd>"
-                                        + "<dt>有效票數</dt>"
-                                        + "<dd>" + row['有效票數'] + "</dd>"
-                                        + "</dl>"
-                            polygon.bindPopup(list)
-                            // polygon.bindPopup(row['縣市'] + row['地區'] + ": " + (row[col] * 100).toFixed(2) + "%")
-                            polygon.on('mouseover', function (e) {
-                                this.openPopup();
-                            });
-                            polygon.on('mouseout', function (e) {
-                                this.closePopup();
-                            });
-                            polygon.addTo(mymap);
+                            // if (row['縣市']=="臺東縣" || row['縣市']=="宜蘭縣"){
+                                var polygon = L.polygon(latlngs, options)
+                                var list = "<dl><dt>位置</dt>"
+                                            + "<dd>" + row['縣市'] + "</dd>"
+                                            + "<dt>同意比率</dt>"
+                                            + "<dd>" + (row[col] * 100).toFixed(2) + "%" + "</dd>"
+                                            + "<dt>有效票數</dt>"
+                                            + "<dd>" + row['有效票數'] + "</dd>"
+                                            + "</dl>"
+                                polygon.bindPopup(list)
+                                // polygon.bindPopup(row['縣市'] + row['地區'] + ": " + (row[col] * 100).toFixed(2) + "%")
+                                polygon.on('mouseover', function (e) {
+                                    this.openPopup();
+                                });
+                                polygon.on('mouseout', function (e) {
+                                    this.closePopup();
+                                });
+                                polygon.addTo(mymap);
+                            // }
+
                         })
 
                     }
