@@ -46,8 +46,8 @@ def index(request):
     return HttpResponse("Hello, world. You're at the index.")
 
 
-# df_result = pd.read_pickle(os.path.join(settings.MEDIA_ROOT,"df_result.pkl"))
-df_result_county = pd.read_pickle(os.path.join(settings.MEDIA_ROOT,"df_result_county.pkl"))
+df_result = pd.read_pickle(os.path.join(settings.MEDIA_ROOT,"df_result.pkl"))
+# df_result_county = pd.read_pickle(os.path.join(settings.MEDIA_ROOT,"df_result_county.pkl"))
 
 def get_df_result(caseid=7):
     # files = os.listdir(os.path.join(settings.MEDIA_ROOT, "results"))
