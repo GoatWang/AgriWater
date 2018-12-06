@@ -6,6 +6,7 @@ from ArgriWater import settings
 import os
 import pandas as pd
 import re
+
 # Create your views here.
 # line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
 # parser = WebhookParser(settings.LINE_CHANNEL_SECRET)
@@ -43,7 +44,33 @@ import re
 
 
 def index(request):
-    return HttpResponse("Hello, world. You're at the index.")
+    # return HttpResponse("Hello, world. You're at the index.")
+    context = {}
+    return render(request, 'mainapp/index.html', context)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 df_result = pd.read_pickle(os.path.join(settings.MEDIA_ROOT,"df_result.pkl"))
