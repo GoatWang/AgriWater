@@ -55,7 +55,7 @@ def index(request):
 def get_all_coordinates(request):
     with open(os.path.join(settings.MEDIA_ROOT, "agriwater", 'locations.pkl'), 'rb') as f:
         coordinates = pickle.load(f)
-    return JsonResponse(coordinates)
+    return JsonResponse(coordinates, safe=False)
  
 
 
