@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 
-
+import pickle
 from ArgriWater import settings
 import os
 import pandas as pd
@@ -45,15 +45,18 @@ import re
 
 def index(request):
     # return HttpResponse("Hello, world. You're at the index.")
-    context = {}
+    # counties = [ '三星站', '三石站', '五結站', '冬山站', '員山站', '基隆站', '壯圍站', '宜蘭站', '宜蘭站', '淡水站', '礁溪站', '羅東站', '蘇澳站', '金山站', '頭城站', '羅東站']
+    counties = ['卑南站', '成功站', '東河站', '檢驗單位', '池上站', '知本站', '臺東站', '長濱站', '關山站', '鹿野站']
+    context = {
+        "counties":counties,
+    }
     return render(request, 'mainapp/index.html', context)
 
-
-
-
-
-
-
+def get_all_coordinates(request):
+    with open(os.path.join(settings.MEDIA_ROOT, "agriwater", 'locations.pkl'), 'rb') as f:
+        coordinates = pickle.load(f)
+    return JsonResponse(coordinates)
+ 
 
 
 

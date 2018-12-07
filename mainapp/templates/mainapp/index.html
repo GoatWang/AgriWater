@@ -48,27 +48,14 @@
         
         <script>
             var mymap = L.map('mapid').setView([23.6055, 120.9911], 8);
+            // http://18.136.213.249:8080/geoserver/taiwan_basic/wms?service=WMS&version=1.1.0&request=GetMap&layers=taiwan_basic:VILLAGE_MOI_1071031&styles=&bbox=118.13797245900003,21.895599675000085,124.56114950000006,26.385278129000085&width=768&height=536&srs=EPSG:3826&format=image%2Fpng
+            // http://18.136.213.249:8080/geoserver/nyc/wms?service=WMS&version=1.1.0&request=GetMap&layers=nyc:nyc_roads&styles=&bbox=984018.1663741902,207673.09513056703,991906.4970533887,219622.53973435296&width=506&height=768&srs=EPSG:2908&format=image%2Fpng
             L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
                 attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
                 maxZoom: 18,
                 id: 'mapbox.streets',
                 accessToken: 'pk.eyJ1IjoiamVyZW15NDU1NSIsImEiOiJjamt6MjRvdWwwcG93M3ZtdGRkMXJlYjRyIn0.6SQzceRZS8aF6JHXBqFUyA'
             }).addTo(mymap);
-            L.tileLayer.wms('http://18.136.213.249:8080/geoserver/taiwan_basic/wms? ', {
-                layers:'taiwan_basic:VILLAGE_MOI_1071031',
-                transparent:true,
-                // version: '1.1.0',
-                format:'image/png',
-                maxZoom:22
-            }).addTo(mymap);
-            // http://18.136.213.249:8080/geoserver/taiwan_basic/wms?service=WMS&version=1.1.0&request=GetMap&layers=taiwan_basic:VILLAGE_MOI_1071031&styles=&bbox=118.13797245900003,21.895599675000085,124.56114950000006,26.385278129000085&width=768&height=536&srs=EPSG:3826&format=image%2Fpng
-            // http://18.136.213.249:8080/geoserver/nyc/wms?service=WMS&version=1.1.0&request=GetMap&layers=nyc:nyc_roads&styles=&bbox=984018.1663741902,207673.09513056703,991906.4970533887,219622.53973435296&width=506&height=768&srs=EPSG:2908&format=image%2Fpng
-            // L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
-            //     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-            //     maxZoom: 18,
-            //     id: 'mapbox.streets',
-            //     accessToken: 'pk.eyJ1IjoiamVyZW15NDU1NSIsImEiOiJjamt6MjRvdWwwcG93M3ZtdGRkMXJlYjRyIn0.6SQzceRZS8aF6JHXBqFUyA'
-            // }).addTo(mymap);
                 // $("body").css("cursor", "wait")
                 // $.ajax({
                 //     url: "/mainapp/election_visualize/" + caseid.toString(),
