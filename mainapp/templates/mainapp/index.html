@@ -6,7 +6,7 @@
         integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
         crossorigin=""/>
         <style>
-            #mapid { height: 700px; }
+            #mapid { height: 600px; }
             .container{
                 margin-top: 20px;   
             }
@@ -14,15 +14,30 @@
                 display: table-cell;
                 vertical-align: middle;
             }
+            #header{
+                margin-bottom: 20px;
+                font-size: 50px;
+                font-weight: bold;
+            }
         </style>
         
     </head>
     <body>
         <div class="container">
             <div class="row">
+                <h2 id="header"class="h2">灌溉水質全民監督網</h2>
+            </div>
+            <div class="row">
                 <div id="mapid" class="col-sm-5"></div>
+                <div id="chart_div" class="col-sm-7">
+
+                </div>
+            </div>
+            <div class="row" id="html_table">
+
             </div>
         </div>
+
 
 
         <script
@@ -47,7 +62,7 @@
         </script>
         
         <script>
-            var mymap = L.map('mapid').setView([23.1005, 121.2], 10);
+            var mymap = L.map('mapid').setView([23.1305, 121.2], 10);
             // http://18.136.213.249:8080/geoserver/taiwan_basic/wms?service=WMS&version=1.1.0&request=GetMap&layers=taiwan_basic:VILLAGE_MOI_1071031&styles=&bbox=118.13797245900003,21.895599675000085,124.56114950000006,26.385278129000085&width=768&height=536&srs=EPSG:3826&format=image%2Fpng
             // http://18.136.213.249:8080/geoserver/nyc/wms?service=WMS&version=1.1.0&request=GetMap&layers=nyc:nyc_roads&styles=&bbox=984018.1663741902,207673.09513056703,991906.4970533887,219622.53973435296&width=506&height=768&srs=EPSG:2908&format=image%2Fpng
             L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
@@ -65,15 +80,84 @@
                 processData: false,
                 contentType: false,
                 success: function(data) {
-                            $(data).each(function(i, v){
-                                console.log(i, v)
-                                point = v['location']['coordinates']
-                                var marker = L.marker([point[1], point[0]]).addTo(mymap);
-                            })
-                        }
-                    });
-                        
+                    $(data).each(function(i, v){
+                        point = v['location']['coordinates']
+                        var marker = L.marker([point[1], point[0]]).addTo(mymap);
+                        marker.bindPopup("<b>" + v['point_name'] + "</b><br>" + v['station']).openPopup();
+                        // console.log("marker.title", marker.title)                                
+                        // console.log("marker.alt", marker.alt)  
+                        // marker.on('click', {"point_number":v['point_number']}, get_point_data);
+                        marker.on('click', function(){
+
+
+                            var point_number = v['point_number']
+                            $.ajax({
+                                url: "/mainapp/get_point_data/" + point_number.toString() + "/",
+                                type: "GET",
+                                cache: false,
+                                processData: false,
+                                contentType: false,
+                                success: function(data) {
+                                        $("#html_table").empty()
+                                        $("#html_table").append(data['html_table'])
+                                        
+                                        console.log(data['採樣日期'])
+                                        console.log(data['監視點名稱'])
+                                        console.log(data['工作站'])
+                                        var color = ["Red", "Blue", "Yellow", "Green", "Purple", "Orange", "Pink"]
+                                        $(data['json_table']).each(function(i, row){
+                                            $("#chart_div").empty()
+
+                                            color_count = 0
+                                            $.each(row, function(key, val){
+
+                                                var id =  key + "_canvas"
+                                                var canvas = $("<canvas>").attr("id", id).attr("width", 500).attr("height", 100)
+                                                $("#chart_div").append(canvas)
+                                                var ctx = document.getElementById(id).getContext('2d');
+                                                var myChart = new Chart(ctx, {
+                                                    type: 'line',
+                                                    data: {
+                                                        labels: data['採樣日期'],
+                                                        datasets: [{
+                                                            label: key,
+                                                            data: val,
+                                                            borderColor:color[color_count],
+                                                            borderWidth: 1
+                                                        }]
+                                                    },
+                                                    options: {}
+                                                });
+                                                color_count += 1
+
+
+                                                
+                                            })
+                                                
+
+                                        })
+
+
+
+
+                                    }
+                                })
+                        });
+
+
+                    })
+                }
+            });
+
+            // function onMapClick(e) {
+            //     alert("You clicked the map at " + e.latlng);
+            // }
+
+            // mymap.on('click', onMapClick);
 
         </script>
+
+
+
     </body>
 </html>

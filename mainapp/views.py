@@ -1,13 +1,77 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 import pickle
 from ArgriWater import settings
 import os
 import pandas as pd
 import re
+from datetime import datetime, timedelta
+# import
+from pymongo import MongoClient
+from bson.objectid import ObjectId #這東西再透過ObjectID去尋找的時候會用到
+dbuser = os.environ['AGRIWATER_DBUSER']
+dbpassword = os.environ['AGRIWATER_DBPASSWORD']
 
-# Create your views here.
+
+# connection
+conn = MongoClient("mongodb://" + dbuser + ":" + dbpassword + "@ds239128.mlab.com:39128/agriwater") # 如果你只想連本機端的server你可以忽略，遠端的url填入: mongodb://<user_name>:<user_password>@ds<xxxxxx>.mlab.com:<xxxxx>/<database_name>，請務必既的把腳括號的內容代換成自己的資料。
+db = conn.agriwater
+collection = db.agriwater
+
+def index(request):
+    # return HttpResponse("Hello, world. You're at the index.")
+    # counties = [ '三星站', '三石站', '五結站', '冬山站', '員山站', '基隆站', '壯圍站', '宜蘭站', '宜蘭站', '淡水站', '礁溪站', '羅東站', '蘇澳站', '金山站', '頭城站', '羅東站']
+    counties = ['卑南站', '成功站', '東河站', '檢驗單位', '池上站', '知本站', '臺東站', '長濱站', '關山站', '鹿野站']
+    context = {
+        "counties":counties,
+    }
+    return render(request, 'mainapp/index.html', context)
+
+def get_all_coordinates(request):
+    with open(os.path.join(settings.MEDIA_ROOT, "agriwater", 'locations.pkl'), 'rb') as f:
+        coordinates = pickle.load(f)
+    return JsonResponse(coordinates, safe=False)
+
+def get_point_data(request, point_number):
+    cursor = collection.find({"point_number":point_number}).sort("sampling_date", -1)
+    data = [c for c in cursor]
+    df = pd.DataFrame(data)[[ "point_name", "station", "sampling_date", "temp", "ph", "ec", "cd", "cr", "pb", "zn",]]
+    df.columns = ["監視點名稱", "工作站", "採樣日期", "溫度", "酸鹼值", "電導度", "鎘", "鉻", "鉛", "鋅",]
+    html_table = df.to_html(index=False, classes="table", border=0).replace(' style="text-align: right;"', "")
+    
+
+    
+    index_cols = ["溫度", "酸鹼值", "電導度", "鋅"] # , "鎘", "鉻", "鉛"
+    df[index_cols] = df[index_cols].fillna(0)
+    earlist_date = sorted(df['採樣日期'])[0]
+    earlist_row = df[df['採樣日期'] == earlist_date].iloc[0]
+    rows_to_append = []
+    for i in range(5 - len(df)):
+        earlist_date = earlist_date - timedelta(days=365)
+        new_row = earlist_row.copy()
+        new_row['採樣日期'] = earlist_date
+        new_row[index_cols] = 0.0
+        rows_to_append.append(new_row.to_dict())
+    df = pd.concat([df, pd.DataFrame(rows_to_append)])
+
+    df = df.sort_values('採樣日期', ascending=True)
+    json_table = df[index_cols].to_dict(orient='list')
+
+
+    # from pprint import pprint
+    # pprint(json_table)
+    res_context = {
+        "html_table":html_table, 
+        "採樣日期":df['採樣日期'].tolist(),
+        "監視點名稱": df['監視點名稱'].values[0], 
+        "工作站": df['工作站'].values[0], 
+        "json_table":json_table}
+    return JsonResponse(res_context)
+
+
+ # Create your views here.
 # line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
 # parser = WebhookParser(settings.LINE_CHANNEL_SECRET)
 # @csrf_exempt
@@ -42,21 +106,6 @@ import re
 #     else:
 #         return HttpResponseBadRequest()
 
-
-def index(request):
-    # return HttpResponse("Hello, world. You're at the index.")
-    # counties = [ '三星站', '三石站', '五結站', '冬山站', '員山站', '基隆站', '壯圍站', '宜蘭站', '宜蘭站', '淡水站', '礁溪站', '羅東站', '蘇澳站', '金山站', '頭城站', '羅東站']
-    counties = ['卑南站', '成功站', '東河站', '檢驗單位', '池上站', '知本站', '臺東站', '長濱站', '關山站', '鹿野站']
-    context = {
-        "counties":counties,
-    }
-    return render(request, 'mainapp/index.html', context)
-
-def get_all_coordinates(request):
-    with open(os.path.join(settings.MEDIA_ROOT, "agriwater", 'locations.pkl'), 'rb') as f:
-        coordinates = pickle.load(f)
-    return JsonResponse(coordinates, safe=False)
- 
 
 
 
