@@ -126,7 +126,7 @@
                             $.each(row, function(key, val){
 
                                 var id =  key + "_canvas"
-                                var canvas = $("<canvas>").attr("id", id).attr("width", 500).attr("height", 100)
+                                var canvas = $("<canvas>").attr("id", id).attr("width", 500).attr("height", 120)
                                 $("#chart_div").append(canvas)
                                 var ctx = document.getElementById(id).getContext('2d');
                                 var myChart = new Chart(ctx, {
