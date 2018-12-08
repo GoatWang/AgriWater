@@ -1,3 +1,5 @@
+{% load static %}
+
 <html>
     <head>
 
@@ -5,6 +7,8 @@
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
         integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
         crossorigin=""/>
+        <link rel='shortcut icon' type='image/x-icon' href="{% static 'mainapp/favicon.ico' %}" />
+
         <style>
             #mapid { height: 600px; }
             .container{
@@ -88,60 +92,7 @@
                         // console.log("marker.alt", marker.alt)  
                         // marker.on('click', {"point_number":v['point_number']}, get_point_data);
                         marker.on('click', function(){
-
-
-                            var point_number = v['point_number']
-                            $.ajax({
-                                url: "/mainapp/get_point_data/" + point_number.toString() + "/",
-                                type: "GET",
-                                cache: false,
-                                processData: false,
-                                contentType: false,
-                                success: function(data) {
-                                        $("#html_table").empty()
-                                        $("#html_table").append(data['html_table'])
-                                        
-                                        console.log(data['採樣日期'])
-                                        console.log(data['監視點名稱'])
-                                        console.log(data['工作站'])
-                                        var color = ["Red", "Blue", "Yellow", "Green", "Purple", "Orange", "Pink"]
-                                        $(data['json_table']).each(function(i, row){
-                                            $("#chart_div").empty()
-
-                                            color_count = 0
-                                            $.each(row, function(key, val){
-
-                                                var id =  key + "_canvas"
-                                                var canvas = $("<canvas>").attr("id", id).attr("width", 500).attr("height", 100)
-                                                $("#chart_div").append(canvas)
-                                                var ctx = document.getElementById(id).getContext('2d');
-                                                var myChart = new Chart(ctx, {
-                                                    type: 'line',
-                                                    data: {
-                                                        labels: data['採樣日期'],
-                                                        datasets: [{
-                                                            label: key,
-                                                            data: val,
-                                                            borderColor:color[color_count],
-                                                            borderWidth: 1
-                                                        }]
-                                                    },
-                                                    options: {}
-                                                });
-                                                color_count += 1
-
-
-                                                
-                                            })
-                                                
-
-                                        })
-
-
-
-
-                                    }
-                                })
+                            get_point_data(v['point_number'])
                         });
 
 
@@ -155,6 +106,52 @@
 
             // mymap.on('click', onMapClick);
 
+
+            function get_point_data(point_number){
+                $.ajax({
+                    url: "/mainapp/get_point_data/" + point_number.toString() + "/",
+                    type: "GET",
+                    cache: false,
+                    processData: false,
+                    contentType: false,
+                    success: function(data) {
+                        $("#html_table").empty()
+                        $("#html_table").append(data['html_table'])
+                        
+                        var color = ["Red", "Blue", "Yellow", "Green", "Purple", "Orange", "Pink"]
+                        $(data['json_table']).each(function(i, row){
+                            $("#chart_div").empty()
+
+                            color_count = 0
+                            $.each(row, function(key, val){
+
+                                var id =  key + "_canvas"
+                                var canvas = $("<canvas>").attr("id", id).attr("width", 500).attr("height", 100)
+                                $("#chart_div").append(canvas)
+                                var ctx = document.getElementById(id).getContext('2d');
+                                var myChart = new Chart(ctx, {
+                                    type: 'line',
+                                    data: {
+                                        labels: data['採樣日期'],
+                                        datasets: [{
+                                            label: key,
+                                            data: val,
+                                            borderColor:color[color_count],
+                                            borderWidth: 1
+                                        }]
+                                    },
+                                    options: {}
+                                });
+                                color_count += 1
+                            })
+                        })
+
+
+
+                    }
+                })
+            }
+            get_point_data(14009031)
         </script>
 
 
