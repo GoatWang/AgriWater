@@ -118,13 +118,43 @@
                         $("#html_table").empty()
                         $("#html_table").append(data['html_table'])
                         
+                        var limitation = data['limitation']
+                        console.log(limitation)
                         var color = ["Red", "Blue", "Yellow", "Green", "Purple", "Orange", "Pink"]
                         $(data['json_table']).each(function(i, row){
                             $("#chart_div").empty()
 
                             color_count = 0
                             $.each(row, function(key, val){
+                                console.log(key)
+                                console.log(limitation[key]['max'])
 
+
+                                datasets = [{
+                                                label: key,
+                                                data: val,
+                                                borderColor:"#689df2",
+                                                fill: false,
+                                                borderWidth: 1
+                                            },
+                                            {
+                                                label: key+ "_上界",
+                                                data: Array.apply(null, Array(5)).map(function(){return limitation[key]['max']}),
+                                                borderColor:"#ff4949",
+                                                fill: false,
+                                                borderWidth: 1
+                                            }]
+
+                                // if(limitation[key]['min']){
+                                //     datasets.push({
+                                //         label: key+ "_下界",
+                                //         data: Array.apply(null, Array(5)).map(function(){return limitation[key]['min']}),
+                                //         borderColor:"#ff4949",
+                                //         fill: false,
+                                //         borderWidth: 1
+                                //     })
+                                // }
+                                console.log(datasets)
                                 var id =  key + "_canvas"
                                 var canvas = $("<canvas>").attr("id", id).attr("width", 500).attr("height", 120)
                                 $("#chart_div").append(canvas)
@@ -133,12 +163,7 @@
                                     type: 'line',
                                     data: {
                                         labels: data['採樣日期'],
-                                        datasets: [{
-                                            label: key,
-                                            data: val,
-                                            borderColor:color[color_count],
-                                            borderWidth: 1
-                                        }]
+                                        datasets:datasets 
                                     },
                                     options: {}
                                 });

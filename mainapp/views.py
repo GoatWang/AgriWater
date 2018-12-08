@@ -60,6 +60,12 @@ def get_point_data(request, point_number):
     json_table = df[index_cols].to_dict(orient='list')
 
 
+    limitation = {
+        "溫度":{"max":35, "min":None},
+        "酸鹼值":{"max":9, "min":6},
+        "電導度":{"max":750, "min":None},
+        "鋅":{"max":2, "min":None},
+    }
     # from pprint import pprint
     # pprint(json_table)
     res_context = {
@@ -67,6 +73,7 @@ def get_point_data(request, point_number):
         "採樣日期":df['採樣日期'].tolist(),
         "監視點名稱": df['監視點名稱'].values[0], 
         "工作站": df['工作站'].values[0], 
+        "limitation":limitation,
         "json_table":json_table}
     return JsonResponse(res_context)
 
