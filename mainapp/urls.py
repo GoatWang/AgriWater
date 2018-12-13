@@ -4,7 +4,8 @@ from . import views
 urlpatterns = [
     path('index/', views.index, name='index'),
     path('get_all_coordinates/', views.get_all_coordinates, name='get_all_coordinates'),
-    path('get_point_data/<int:point_number>/', views.get_point_data, name='get_point_data'),
+    path('get_points/<str:association>/<str:station>/', views.get_points, name='get_points'),
+    path('get_point_data/<str:point_number>/', views.get_point_data, name='get_point_data'),
 
     # path('election_index/', views.election_index, name='election_index'),
     # path('election_visualize/', views.election_visualize, name='election_visualize'),

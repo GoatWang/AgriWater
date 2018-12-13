@@ -18,61 +18,84 @@ dbpassword = os.environ['AGRIWATER_DBPASSWORD']
 # connection
 conn = MongoClient("mongodb://" + dbuser + ":" + dbpassword + "@ds239128.mlab.com:39128/agriwater") # 如果你只想連本機端的server你可以忽略，遠端的url填入: mongodb://<user_name>:<user_password>@ds<xxxxxx>.mlab.com:<xxxxx>/<database_name>，請務必既的把腳括號的內容代換成自己的資料。
 db = conn.agriwater
-collection = db.agriwater
+# collection = db.agriwater
+collection = db.agriwater_first
 
 def index(request):
-    # return HttpResponse("Hello, world. You're at the index.")
-    # counties = [ '三星站', '三石站', '五結站', '冬山站', '員山站', '基隆站', '壯圍站', '宜蘭站', '宜蘭站', '淡水站', '礁溪站', '羅東站', '蘇澳站', '金山站', '頭城站', '羅東站']
-    counties = ['卑南站', '成功站', '東河站', '檢驗單位', '池上站', '知本站', '臺東站', '長濱站', '關山站', '鹿野站']
+    # counties = ['卑南站', '成功站', '東河站', '檢驗單位', '池上站', '知本站', '臺東站', '長濱站', '關山站', '鹿野站']
+    associations = list(collection.distinct('association'))
+    stations = list(collection.distinct('station'))
+    # association_stations = {}
+    # association_station_points = {}
+    # for association in associations:
+    #     stations = collection.distince('station', filter={"association":association})
+    #     association_stations[association] = stations
+    #     for station in stations:
+    #         points = collection.distince('point', filter={"station":station})
+    #         association_station_points[association+"_"+station] = points
+        
     context = {
-        "counties":counties,
+        "associations": associations,
+        "stations": stations,
     }
     return render(request, 'mainapp/index.html', context)
 
+def get_points(request, association, station):
+    cursor = collection.aggregate([
+                    {"$match": {"association":association}},
+                    {"$match": {"station":station}},
+                    {
+                        "$group": { 
+                            "_id": { 
+                                "point_name": "$point_name", 
+                                "point_number": "$point_number" 
+                            } 
+                        } 
+                    },
+                ])
+    points = [c['_id'] for c in cursor]
+    context = {"points": points,}
+    return JsonResponse(context)
+
+
 def get_all_coordinates(request):
-    with open(os.path.join(settings.MEDIA_ROOT, "agriwater", 'locations.pkl'), 'rb') as f:
-        coordinates = pickle.load(f)
+    # with open(os.path.join(settings.MEDIA_ROOT, "agriwater", 'locations.pkl'), 'rb') as f:
+    #     coordinates = pickle.load(f)
+    cursor = collection.aggregate([
+                    {"$group": { "_id": { 
+                        "association": "$association", 
+                        "station": "$station" , 
+                        "point_name": "$point_name" , 
+                        "point_number": "$point_number",
+                        "location": "$location" } } }
+                ])
+    coordinates = [c['_id'] for c in cursor]
     return JsonResponse(coordinates, safe=False)
 
 def get_point_data(request, point_number):
     cursor = collection.find({"point_number":point_number}).sort("sampling_date", -1)
     data = [c for c in cursor]
-    df = pd.DataFrame(data)[[ "point_name", "station", "sampling_date", "temp", "ph", "ec", "cd", "cr", "pb", "zn",]]
-    df.columns = ["監視點名稱", "工作站", "採樣日期", "溫度", "酸鹼值", "電導度", "鎘", "鉻", "鉛", "鋅",]
-    html_table = df.to_html(index=False, classes="table", border=0).replace(' style="text-align: right;"', "")
+    df = pd.DataFrame(data)[["station", "point_name", "sampling_date", "temp", "ph", "ec", "result", "point_number", "association", "location"]]#[[ "point_name", "station", "sampling_date", "temp", "ph", "ec", "cd", "cr", "pb", "zn",]]
+    df.columns = ["檢測站", "檢測點", "採樣日期", "溫度", "酸鹼度", "電導度", "檢測通過", "檢測點編號", "水利會", "經緯度"]#["監視點名稱", "工作站", "採樣日期", "溫度", "酸鹼值", "電導度", "鎘", "鉻", "鉛", "鋅",]
+    showing_cols = ["水利會", "檢測站", "檢測點", "採樣日期", "溫度", "酸鹼度", "電導度", "檢測通過"]
+    html_table = df[showing_cols].to_html(index=False, classes="table", border=0).replace(' style="text-align: right;"', "")
     
-
-    
-    index_cols = ["溫度", "酸鹼值", "電導度", "鋅"] # , "鎘", "鉻", "鉛"
-    df[index_cols] = df[index_cols].fillna(0)
-    earlist_date = sorted(df['採樣日期'])[0]
-    earlist_row = df[df['採樣日期'] == earlist_date].iloc[0]
-    rows_to_append = []
-    for i in range(5 - len(df)):
-        earlist_date = earlist_date - timedelta(days=365)
-        new_row = earlist_row.copy()
-        new_row['採樣日期'] = earlist_date
-        new_row[index_cols] = 0.0
-        rows_to_append.append(new_row.to_dict())
-    df = pd.concat([df, pd.DataFrame(rows_to_append)])
-
-    df = df.sort_values('採樣日期', ascending=True)
+    index_cols = ["溫度", "酸鹼度", "電導度"]#["溫度", "酸鹼值", "電導度", "鋅"] # , "鎘", "鉻", "鉛"
+    df = df.iloc[:5].sort_values('採樣日期', ascending=True)
     json_table = df[index_cols].to_dict(orient='list')
-
 
     limitation = {
         "溫度":{"max":35, "min":None},
-        "酸鹼值":{"max":9, "min":6},
+        "酸鹼度":{"max":9, "min":6},
         "電導度":{"max":750, "min":None},
-        "鋅":{"max":2, "min":None},
+        # "鋅":{"max":2, "min":None},
     }
-    # from pprint import pprint
-    # pprint(json_table)
     res_context = {
         "html_table":html_table, 
         "採樣日期":df['採樣日期'].tolist(),
-        "監視點名稱": df['監視點名稱'].values[0], 
-        "工作站": df['工作站'].values[0], 
+        "association": df['水利會'].values[0], 
+        "station": df['檢測站'].values[0], 
+        "point_name": df['檢測點'].values[0], 
         "limitation":limitation,
         "json_table":json_table}
     return JsonResponse(res_context)

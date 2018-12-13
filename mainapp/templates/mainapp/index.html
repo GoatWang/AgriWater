@@ -33,10 +33,33 @@
             </div>
             <div class="row">
                 <div id="mapid" class="col-sm-5"></div>
-                <div id="chart_div" class="col-sm-7">
-
+                <div class="col-sm-7">
+                    <form>
+                        <div class="form-group">
+                            <label for="id_association_select" >水利會</label>
+                            <select id="id_association_select" name="association" class="form-control">
+                                {% for association in associations %}
+                                    <option>{{ association }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="id_station_select" >檢測站</label>
+                            <select id="id_station_select" name="station" class="form-control">
+                                {% for station in stations %}
+                                    <option>{{ station }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="id_point_select" >檢測點</label>
+                            <select id="id_point_select" name="point_name" class="form-control">
+                            </select>
+                        </div>
+                    </form>
                 </div>
             </div>
+            <div id="chart_div" class="row"></div>
             <div class="row" id="html_table">
 
             </div>
@@ -77,35 +100,65 @@
             }).addTo(mymap);
 
                 // $("body").css("cursor", "wait")
-            $.ajax({
-                url: "/mainapp/get_all_coordinates/",
-                type: "GET",
-                cache: false,
-                processData: false,
-                contentType: false,
-                success: function(data) {
-                    $(data).each(function(i, v){
-                        point = v['location']['coordinates']
-                        var marker = L.marker([point[1], point[0]]).addTo(mymap);
-                        marker.bindPopup("<b>" + v['point_name'] + "</b><br>" + v['station']).openPopup();
-                        // console.log("marker.title", marker.title)                                
-                        // console.log("marker.alt", marker.alt)  
-                        // marker.on('click', {"point_number":v['point_number']}, get_point_data);
-                        marker.on('click', function(){
-                            get_point_data(v['point_number'])
-                        });
+            function draw_points(){
+                $.ajax({
+                    url: "/mainapp/get_all_coordinates/",
+                    type: "GET",
+                    cache: false,
+                    processData: false,
+                    contentType: false,
+                    success: function(data) {
+                        $(data).each(function(i, v){
+                            point = v['location']['coordinates']
+                            var marker = L.marker([point[1], point[0]]).addTo(mymap);
 
+                            var point_name = $("#id_point_select").val()
+                            if (point_name == v['point_name']){
+                                marker.bindPopup("<b>" + v['point_name'] + "</b><br>" + v['station']).openPopup();
+                            }else{
+                                marker.bindPopup("<b>" + v['point_name'] + "</b><br>" + v['station']);
+                            }
+                            // console.log("marker.title", marker.title)                                
+                            // console.log("marker.alt", marker.alt)  
+                            // marker.on('click', {"point_number":v['point_number']}, get_point_data);
+                            marker.on('click', function(){
+                                get_point_data(v['point_number'])
+                            });
+                        })
+                    }
+                });
+            }
+            draw_points()
 
-                    })
-                }
-            });
+            
+            function get_points(){
+                var association = $("#id_association_select").val()
+                var station = $("#id_station_select").val()
+                $.ajax({
+                    url: "/mainapp/get_points/" + association + "/" + station + "/",
+                    type: "GET",
+                    cache: false,
+                    processData: false,
+                    contentType: false,
+                    success: function(data) {
+                        $("#id_point_select").empty()
+                        $(data['points']).each(function(i,v){
+                            var opt = $("<option>").text(v['point_name']).attr("id", v['point_number'])
+                            $("#id_point_select").append(opt)
+                        })
+                    }
+                })
+            }
+            get_points()
 
-            // function onMapClick(e) {
-            //     alert("You clicked the map at " + e.latlng);
-            // }
+            $("#id_station_select").change(function(){
+                get_points()
+                draw_points()
+            })
 
-            // mymap.on('click', onMapClick);
-
+            $("#id_point_select").change(function(){
+                draw_points()
+            })
 
             function get_point_data(point_number){
                 $.ajax({
@@ -115,46 +168,71 @@
                     processData: false,
                     contentType: false,
                     success: function(data) {
+                        // update_select
+                        // association = data['association']
+                        // $("#id_association_select option").each(function(){
+                        //     $(this).removeAttr("selected")
+                        //     if($(this).text() == association){
+                        //         console.log(association)
+                        //         $(this).attr("selected", "selected")
+                        //     }
+                        // })
+                        // station = data['station']
+                        // $("#id_station_select option").each(function(){
+                        //     $(this).removeAttr("selected")
+                        //     if($(this).text() == station){
+                        //         console.log(station)
+                        //         $(this).attr("selected", "selected")
+                        //     }
+                        // })
+                        // point_name = data['point_name']
+                        // $("#id_point_select option").each(function(){
+                        //     $(this).removeAttr("selected")
+                        //     console.log($(this).text())
+                        //     console.log(point_name)
+                        //     if($(this).text() == point_name){
+                        //         console.log(point_name)
+                        //         $(this).attr("selected", "selected")
+                        //     }
+                        // })
+
+                        // generate htmltable
                         $("#html_table").empty()
                         $("#html_table").append(data['html_table'])
                         
                         var limitation = data['limitation']
-                        console.log(limitation)
                         var color = ["Red", "Blue", "Yellow", "Green", "Purple", "Orange", "Pink"]
                         $(data['json_table']).each(function(i, row){
                             $("#chart_div").empty()
 
                             color_count = 0
                             $.each(row, function(key, val){
-                                console.log(key)
-                                console.log(limitation[key]['max'])
-
-
                                 datasets = [{
                                                 label: key,
                                                 data: val,
                                                 borderColor:"#689df2",
                                                 fill: false,
-                                                borderWidth: 1
+                                                borderWidth: 2
                                             },
                                             {
                                                 label: key+ "_上界",
                                                 data: Array.apply(null, Array(5)).map(function(){return limitation[key]['max']}),
                                                 borderColor:"#ff4949",
                                                 fill: false,
-                                                borderWidth: 1
+                                                borderWidth: 1,
+                                                pointRadius: 0,
                                             }]
+                                if(limitation[key]['min']){
+                                    datasets.push({
+                                        label: key+ "_下界",
+                                        data: Array.apply(null, Array(5)).map(function(){return limitation[key]['min']}),
+                                        borderColor:"#ff4949",
+                                        fill: false,
+                                        borderWidth: 1,
+                                        pointRadius: 0,
+                                    })
+                                }
 
-                                // if(limitation[key]['min']){
-                                //     datasets.push({
-                                //         label: key+ "_下界",
-                                //         data: Array.apply(null, Array(5)).map(function(){return limitation[key]['min']}),
-                                //         borderColor:"#ff4949",
-                                //         fill: false,
-                                //         borderWidth: 1
-                                //     })
-                                // }
-                                console.log(datasets)
                                 var id =  key + "_canvas"
                                 var canvas = $("<canvas>").attr("id", id).attr("width", 500).attr("height", 120)
                                 $("#chart_div").append(canvas)
@@ -170,9 +248,6 @@
                                 color_count += 1
                             })
                         })
-
-
-
                     }
                 })
             }
