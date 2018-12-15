@@ -149,6 +149,9 @@ GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH')
 GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
 
 
+AGRI_LINE_CHANNEL_ACCESS_TOKEN = os.environ['AGRI_LINE_CHANNEL_ACCESS_TOKEN']
+AGRI_LINE_CHANNEL_SECRET = os.environ['AGRI_LINE_CHANNEL_SECRET']
+
 # heroku stack:set cedar-14 --app argri-water
 # heroku git:remote -a argri-water
 # heroku config:set POSTGRESQL_PASSWORD=?? POSTGRESQL_HOST=??

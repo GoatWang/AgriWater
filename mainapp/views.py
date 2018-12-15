@@ -2,14 +2,33 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
+
+
+from linebot import LineBotApi, WebhookParser ##, WebhookHanlder
+from linebot.exceptions import InvalidSignatureError, LineBotApiError
+from linebot.models import (
+    MessageEvent, FollowEvent, PostbackEvent, UnfollowEvent,
+    TextMessage, LocationMessage, 
+    TextSendMessage, TemplateSendMessage,ImageSendMessage, StickerSendMessage,
+    ButtonsTemplate, ConfirmTemplate, CarouselTemplate,
+    PostbackTemplateAction, MessageTemplateAction, URITemplateAction,
+    CarouselColumn
+)
+line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
+parser = WebhookParser(settings.LINE_CHANNEL_SECRET)
+
+
+
+
 import pickle
-from ArgriWater import settings
 import os
 import pandas as pd
 import re
 from datetime import datetime, timedelta
+from ArgriWater import settings
 # import
 from pymongo import MongoClient
+from bson.son import SON
 from bson.objectid import ObjectId #這東西再透過ObjectID去尋找的時候會用到
 dbuser = os.environ['AGRIWATER_DBUSER']
 dbpassword = os.environ['AGRIWATER_DBPASSWORD']
@@ -102,43 +121,87 @@ def get_point_data(request, point_number):
 
 
  # Create your views here.
-# line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
-# parser = WebhookParser(settings.LINE_CHANNEL_SECRET)
-# @csrf_exempt
-# def callback(request):
-#     if request.method == 'GET':
-#         return JsonResponse({"status_code":200, "message":"you are in callback function!"})
-#     if request.method == 'POST':
-#         signature = request.META['HTTP_X_LINE_SIGNATURE']
-#         body = request.body.decode('utf-8')
+line_bot_api = LineBotApi(settings.LINE_CHANNEL_ACCESS_TOKEN)
+parser = WebhookParser(settings.LINE_CHANNEL_SECRET)
+@csrf_exempt
+def callback(request):
+    if request.method == 'GET':
+        return JsonResponse({"status_code":200, "message":"you are in callback function!"})
+    if request.method == 'POST':
+        signature = request.META['HTTP_X_LINE_SIGNATURE']
+        body = request.body.decode('utf-8')
 
-#         try:
-#             events = parser.parse(body, signature)
-#         except InvalidSignatureError:
-#             return HttpResponseForbidden()
-#         except LineBotApiError:
-#             return HttpResponseBadRequest()
+        # try:
+        #     events = parser.parse(body, signature)
+        # except InvalidSignatureError:
+        #     return HttpResponseForbidden()
+        # except LineBotApiError:
+        #     return HttpResponseBadRequest()
 
-#         for event in events:
-#             if isinstance(event, MessageEvent):
-#                 if isinstance(event.message, TextMessage):
-#                     _handle_text_message(event,request.get_host())
-#                 if isinstance(event.message, LocationMessage):
-#                     _handle_location_message(event)
-#             if isinstance(event, FollowEvent):
-#                 _handle_follow_event(event)
-#             if isinstance(event, UnfollowEvent):
-#                 _handle_unfollow_event(event)
-#             if isinstance(event, PostbackEvent):
-#                 _handle_postback_event(event)
+        for event in events:
+            if isinstance(event, MessageEvent):
+                if isinstance(event.message, TextMessage):
+                    _handle_text_message(event,request.get_host())
+                if isinstance(event.message, LocationMessage):
+                    _handle_location_message(event)
+            # if isinstance(event, FollowEvent):
+            #     _handle_follow_event(event)
+            # if isinstance(event, UnfollowEvent):
+            #     _handle_unfollow_event(event)
+            # if isinstance(event, PostbackEvent):
+            #     _handle_postback_event(event)
                 
-#         return HttpResponse()
-#     else:
-#         return HttpResponseBadRequest()
+        return HttpResponse()
+    # else:
+    #     return HttpResponseBadRequest()
 
 
+def _handle_text_msg(event):
+    text = event.message.text
+    messages = [TextSendMessage(text=text)]
+
+    line_bot_api.reply_message(
+        event.reply_token,
+        messages
+    )
 
 
+def _handle_location_msg(event):
+    location = event.message 
+    address = location.address
+    lat = location.latitude
+    lng = location.longitude
+    messages = []
+
+    # lng, lat = 121.120222, 22.782330
+    query = { "location" :
+       { "$near" :
+          {
+            "$geometry" : {
+               "type" : "Point" ,
+               "coordinates" : [lng, lat] },
+          }
+       }
+    }
+
+    # query = { "location" :{ "$near" :{"$geometry" : {"type" : "Point" ,"coordinates" : [lng, lat] }}}}
+    data = collection.find_one(query)
+    result = "通過" if data['result'] else "未通過"
+    response = ""
+    response += "水利會: " + data['association']
+    response += "檢測站: " + data['station']
+    response += "檢測點: " + data['point_name']
+    response += "溫度: %.2f"  %data['temp']
+    response += "酸鹼度: %.2f"  %data['ph']
+    response += "電導度: %.2f"  %data['ec']
+    response += "檢測通過: " + data['result']
+    
+    messages = TextSendMessage(text=response)
+        
+    line_bot_api.reply_message(
+        event.reply_token,
+        messages
+    )
 
 
 
